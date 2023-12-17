@@ -1,23 +1,40 @@
-import requests
+
 from flask import Flask, request, jsonify
+import ipinfo
+from foodapp.backend import get_yelp_recommendations_by_location, get_yelp_recommendations
 
 app = Flask(__name__)
 
-@app.route('/api/recommendations', methods=['GET'])
-def get_recommendations():
-    user_location = request.args.get('location')
-    term = 'food'
-    api_key = 'oOPSmJXc-ReasQ3ujf3fJL1mbebm89JjtgwTjCcQ5A4CkRnl7_oyRLP746lkm7c0Own6G1AWHOeWNIlXUaTVPgJ10NQbQeVskDhLS2e01rz3zyGOnYtwwRviOzp-ZXYx'  # Ideally fetched from a secure environment variable
-    headers = {'Authorization': f'Bearer {api_key}'}
-    search_url = "https://api.yelp.com/v3/businesses/search"
-    
-    params = {
-        'term': term,
-        'location': user_location
-    }
-    
-    response = requests.get(search_url, headers=headers, params=params)
-    return jsonify(response.json())
+access_token = 'ca9af5c4faddf4'
+handler = ipinfo.getHandler(access_token)
+
+@app.route('/')
+def index():
+    return "Welcome to the foodAPI"
+
+@app.route('/recommendations/manual')
+def manual_location_recommendations():
+    user_input_location = request.args.get('location')
+
+    # Use the Yelp API to get recommendations based on the user's input
+    recommendations = get_yelp_recommendations_by_location(user_input_location)
+    return jsonify(recommendations)
+
+
+
+# Grabs ip and then 
+@app.route('/recommendations/auto')
+def auto_location_recommendations():
+    ip_address = request.remote_addr
+    details = handler.getDetails(ip_address)
+
+    latitude = details.latitude
+    longitude = details.longitude
+
+    recommendations = get_yelp_recommendations(latitude, longitude)
+    return jsonify(recommendations)
+
+
 
 if __name__ == '__main__':
     app.run()
